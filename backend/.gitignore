@@ -1,0 +1,12 @@
+# media files
+/media
+
+#pycache files
+/backend/__pycache__
+/users/__pycache__
+
+#migration files 
+/users/migrations
+
+# database file
+*.sqlite3

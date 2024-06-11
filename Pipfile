@@ -1,0 +1,23 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django = "==5.0.6"
+django-cors-headers = "==4.3.1"
+django-extensions = "==3.2.3"
+django-templated-mail = "==1.1.1"
+djangorestframework = "==3.15.1"
+djangorestframework-simplejwt = "==5.3.1"
+djoser = "==2.2.2"
+pillow = "==10.3.0"
+pycparser = "==2.22"
+pyjwt = "==2.8.0"
+pytz = "==2024.1"
+requests = "==2.31.0"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"
