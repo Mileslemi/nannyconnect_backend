@@ -1,5 +1,6 @@
 # media files
 /media
+/static
 
 #pycache files
 /backend/__pycache__
