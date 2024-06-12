@@ -159,14 +159,15 @@ SIMPLE_JWT = {
 DJOSER = {
     # will require password and confirm password
     'USER_CREATE_PASSWORD_RETYPE':True,
-    'USERNAME_CHANGED_EMAIL_CONFIRMATION':True,
     'PASSWORD_CHANGED_EMAIL_CONFIRMATION':True,
-    'SEND_CONFIRMATION_EMAIL':True,
-    'SEND_ACTIVATION_EMAIL':True,
     'SET_PASSWORD_RETYPE':True,
     'PASSWORD_RESET_CONFIRM_URL':'password/reset/confirm/{uid}/{token}',
-    'USERNAME_RESET_CONFIRM_URL':'email/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL':'activate/{uid}/{token}',
+    'SERIALIZERS':{
+        'user_create':'users.serializers.UserCreateSerializer',
+        'current_user': 'users.serializers.UserSerializer', 
+        'user':'users.serializers.UserSerializer',
+    },
 }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
