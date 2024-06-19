@@ -22,18 +22,18 @@ class Address(models.Model):
 
 class UserAccountManager(BaseUserManager):
     # create normal user
-    def create_user(self, username, email, first_name, last_name, phone_number, password=None):
+    def create_user(self, username, email, first_name, last_name, phone_number, password=None, **extra_fields):
         if not username:
             raise ValueError("Username must be provided")
         if not email:
             raise ValueError("Email must be provided")
         # will turn Mileslemi to mileslemi
         email = self.normalize_email(email)
-        user = self.model(username=username, email=email, first_name=first_name, last_name=last_name, phone_number=phone_number)
+        user = self.model(username=username, email=email, first_name=first_name, last_name=last_name, phone_number=phone_number, **extra_fields)
         
         # hash password using inbuilt django fn
         user.set_password(password)
-        user.save()
+        user.save(using=self._db)
         
         return user
     
@@ -45,7 +45,7 @@ class UserAccountManager(BaseUserManager):
             raise ValueError("Email must be provided")
         # will turn Mileslemi to mileslemi
         email = self.normalize_email(email)
-        user = self.model(username=username, email=email, first_name=first_name, last_name=last_name, phone_number=phone_number, is_staff=True, is_superuser=True)
+        user = self.model(username=username.lower(), email=email, first_name=first_name, last_name=last_name, phone_number=phone_number, is_staff=True, is_superuser=True)
         
         # hash password using inbuilt django fn
         user.set_password(password)
@@ -72,7 +72,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'username'
     
-    REQUIRED_FIELDS = ['first_name', 'last_name', 'email', 'phone_number']
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'email', 'phone_number', 'user_type','location']
     
     def get_full_name(self):
         return self.first_name + " " + self.last_name
@@ -89,11 +89,12 @@ class Nanny(models.Model):
     hourly_rate = models.DecimalField(max_digits=10, decimal_places=2)
 
 class Booking(models.Model):
-    user = models.OneToOneField(User, on_delete=models.RESTRICT)
-    nanny = models.OneToOneField(Nanny, on_delete=models.RESTRICT)
+    user = models.ForeignKey(User, related_name="user", on_delete=models.RESTRICT)
+    nanny = models.ForeignKey(Nanny, related_name="nanny", on_delete=models.RESTRICT)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     negotiated_hourly_rate = models.DecimalField(max_digits=10, decimal_places=2)
     status_choice = {"pending":"Pending", "confirmed":"Confirmed","rejected":"Rejected" ,"cancelled":"Cancelled", "done":"Done"}
     status = models.CharField(max_length=16, choices=status_choice, default="pending")
+    details = models.TextField(null=True, blank=True)
     

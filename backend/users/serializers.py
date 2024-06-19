@@ -19,12 +19,29 @@ class AddressSerializer(ModelSerializer):
         fields = "__all__"
         
 class UserSerializer(UserSerializer):
-    address = AddressSerializer(read_only=True)
+    location = AddressSerializer(read_only=True)
     class Meta(UserSerializer.Meta):
         model = User
-        fields = ('id','email','first_name','last_name','phone_number','address', 'is_staff','user_type')
-        
+        fields = ('id', 'username', 'email','first_name','last_name','phone_number','location', 'is_staff','user_type','image')
+    def to_representation(self, instance):
+        representation =  super().to_representation(instance)
+        if representation['user_type'] == 'nanny':
+            if Nanny.objects.filter(user=representation['id']).exists():
+                representation['nanny'] = MiniNannySerializer(Nanny.objects.get(user=representation['id'])).data
+        return representation 
+    
+class MiniUserSerializer(ModelSerializer):
+    location = AddressSerializer(read_only=True)
+    class Meta:
+        model = User
+        fields = ('id', 'email','first_name','last_name','phone_number','location', 'image')
 class NannySerializer(ModelSerializer):
+    user = MiniUserSerializer(read_only=True)
+    class Meta:
+        model = Nanny
+        fields = '__all__'
+
+class MiniNannySerializer(ModelSerializer):
     class Meta:
         model = Nanny
         fields = '__all__'
@@ -33,8 +50,18 @@ class BookingSerializer(ModelSerializer):
     class Meta:
         model = Booking
         fields = "__all__"
-    # def to_representation(self, instance):
-    #     representation =  super().to_representation(instance)
-    #     return representation
+    def to_representation(self, instance):
+        representation =  super().to_representation(instance)
+        user = User.objects.get(id=representation['user'])
+        representation['user'] = MiniUserSerializer(user, read_only=True).data
+        nanny = Nanny.objects.get(id=representation['nanny'])
+        representation['nanny'] = NannySerializer(nanny, read_only=True).data
+        return representation
+class ExtBookingSerializer(ModelSerializer):
+    nanny = NannySerializer(read_only=True)
+    user = MiniUserSerializer(read_only=True)
+    class Meta:
+        model = Booking
+        fields = "__all__"
         
 
