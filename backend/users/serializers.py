@@ -36,10 +36,14 @@ class MiniUserSerializer(ModelSerializer):
         model = User
         fields = ('id', 'email','first_name','last_name','phone_number','location', 'image')
 class NannySerializer(ModelSerializer):
-    user = MiniUserSerializer(read_only=True)
     class Meta:
         model = Nanny
         fields = '__all__'
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        user = User.objects.get(id=representation['user'])
+        representation['user'] = MiniUserSerializer(user, read_only=True).data
+        return representation
 
 class MiniNannySerializer(ModelSerializer):
     class Meta:
