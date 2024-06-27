@@ -45,7 +45,7 @@ class UserSerializer(UserSerializer):
     location = AddressSerializer(read_only=True)
     class Meta(UserSerializer.Meta):
         model = User
-        fields = ('id', 'username', 'email','first_name','last_name','phone_number','location', 'is_staff','user_type','image', 'suspended')
+        fields = ['id', 'username', 'email','first_name','last_name','phone_number','location', 'is_staff','user_type','image', 'suspended']
     def to_representation(self, instance):
         representation =  super().to_representation(instance)
         if representation['user_type'] == 'nanny':

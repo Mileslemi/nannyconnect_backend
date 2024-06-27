@@ -39,7 +39,7 @@ class UserDetail(APIView):
         return Response(serializer.data)
     
     def put(self, request, username):
-        print(request.data)
+        
         user = self.get_object(username)
         serializer = UserSerializer(user, data=request.data)
         if serializer.is_valid():
@@ -322,7 +322,7 @@ class NannyFormsUploading(APIView):
     serializer_class = NannyFormsSerializer
         
     def post(self, request):
-        print(request.data)
+        
         id_front = request.FILES["id_front"]
         id_back = request.FILES["id_back"]
         cert = request.FILES["cert"]

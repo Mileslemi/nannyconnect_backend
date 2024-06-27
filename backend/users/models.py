@@ -64,7 +64,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     date_created_gmt = models.DateTimeField(auto_now_add=True)
     date_modified_gmt =  models.DateTimeField(auto_now=True)
     location = models.OneToOneField(Address, blank=True, null=True, on_delete=models.PROTECT)
-    image = models.ImageField(upload_to="images/")
+    image = models.ImageField(upload_to="images/", null=True)
     user_type_choices = {"nanny":"Nanny","family":"Family"}
     user_type = models.CharField(max_length=16, choices=user_type_choices, blank=True, null=True)
     suspended = models.BooleanField(default=False)
