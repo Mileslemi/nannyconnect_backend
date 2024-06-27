@@ -67,6 +67,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     image = models.ImageField(upload_to="images/")
     user_type_choices = {"nanny":"Nanny","family":"Family"}
     user_type = models.CharField(max_length=16, choices=user_type_choices, blank=True, null=True)
+    suspended = models.BooleanField(default=False)
     
     objects = UserAccountManager()
 
@@ -99,7 +100,6 @@ class Nanny(models.Model):
     bio = models.TextField(blank=True, null=True)
     reviews = models.ManyToManyField(Reviews, blank=True)
     verified = models.BooleanField(default=False)
-    suspended = models.BooleanField(default=False)
     docs = models.OneToOneField(NannyForms, blank=True, null=True, on_delete=models.PROTECT)
 
 class Booking(models.Model):
@@ -115,8 +115,11 @@ class Booking(models.Model):
 
 
 class Complaints(models.Model):
-    booking = models.ManyToManyField(Booking)
+    booking = models.OneToOneField(Booking, on_delete=models.PROTECT)
     complaint = models.TextField()
+    date_created_gmt = models.DateTimeField(auto_now_add=True)
+    date_modified_gmt = models.DateTimeField(auto_now=True)
+    sorted = models.BooleanField(default=False)
     
 class Notifications(models.Model):
     sender = models.ForeignKey(User, related_name='sender', on_delete=models.PROTECT)

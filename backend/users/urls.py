@@ -3,6 +3,8 @@ from .views import *
 
 urlpatterns = [
   path('', UsersList.as_view(), name="users list"),
+  path('get_families/', getFamilies, name="get families"),
+  path('get_family/<str:username>/', UserDetail.as_view(), name="get family details" ),
   path('bookings/', BookingList.as_view(), name="bookings"),
   path('bookings/<int:pk>/',BookingDetail.as_view(), name="booking detail"),
   path('filter_bookings/', FilterBookings.as_view(), name="filter bookings"),
@@ -23,6 +25,9 @@ urlpatterns = [
   path('chats/<int:pk>/', ChatDetail.as_view(), name="chat detail"),
   path('get_chats/', getChats, name="get chats"),
   path('unread_notifications/', unReadNotificationsCount, name="unread notifications"),
+  path('suspend_action/', onSuspendAction, name="un/suspend user"),
   path('update_notifications/', updateAsRead, name="update notifications as read"),
+  path('verify_nanny/', verifyNanny, name="verify nanny"),
+  path('mark_as_sorted/', markAsSorted, name="mark complaint as sorted"),
   path('<str:username>/', UserDetail.as_view(), name="user detail"),
 ]

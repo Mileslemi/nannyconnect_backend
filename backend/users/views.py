@@ -431,3 +431,38 @@ def updateAsRead(request):
         return Response(status=status.HTTP_204_NO_CONTENT)
     return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@api_view(['GET'])
+def getFamilies(request):
+    users = User.objects.filter(user_type='family')
+    serializer = UserSerializer(users, many=True)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+def onSuspendAction(request):
+   
+    user_id = request.data.get("user_id", None)
+    suspend = request.data.get("suspend", None)
+    if user_id and suspend is not None:
+        
+        User.objects.filter(id=user_id).update(suspended=suspend)
+        serializer = UserSerializer(User.objects.get(id=user_id))
+        return Response(serializer.data)
+    return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def verifyNanny(request):
+    nanny_id = request.data.get("nanny_id", None)
+    if nanny_id: 
+        Nanny.objects.filter(id=nanny_id).update(verified=True)
+        serializer = NannySerializer(Nanny.objects.get(id=nanny_id))
+        return Response(serializer.data)
+    return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def markAsSorted(request):
+    complaint_id = request.data.get("complaint_id", None)
+    if complaint_id: 
+        Complaints.objects.filter(id=complaint_id).update(sorted=True)
+        serializer = ComplaintsSerializer(Complaints.objects.get(id=complaint_id))
+        return Response(serializer.data)
+    return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)

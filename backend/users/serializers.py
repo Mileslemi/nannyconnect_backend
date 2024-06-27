@@ -22,12 +22,12 @@ class MiniUserSerializer(ModelSerializer):
     location = AddressSerializer(read_only=True)
     class Meta:
         model = User
-        fields = ('id', 'email','first_name','last_name','phone_number','location', 'image')
+        fields = ('id', 'email','first_name','last_name','phone_number','location', 'image', 'suspended')
 
 class MiniMiniUserSerializer(ModelSerializer):
     class Meta:
         model = User
-        fields = ('id','first_name','last_name','phone_number','image')
+        fields = ('id','first_name','last_name','phone_number','image', 'suspended')
 
 
 class ReviewReadSerializer(ModelSerializer):
@@ -45,7 +45,7 @@ class UserSerializer(UserSerializer):
     location = AddressSerializer(read_only=True)
     class Meta(UserSerializer.Meta):
         model = User
-        fields = ('id', 'username', 'email','first_name','last_name','phone_number','location', 'is_staff','user_type','image')
+        fields = ('id', 'username', 'email','first_name','last_name','phone_number','location', 'is_staff','user_type','image', 'suspended')
     def to_representation(self, instance):
         representation =  super().to_representation(instance)
         if representation['user_type'] == 'nanny':
@@ -85,6 +85,7 @@ class NannySerializer(ModelSerializer):
         return representation
 
 class MiniNannySerializer(ModelSerializer):
+    user = MiniUserSerializer(read_only=True)
     class Meta:
         model = Nanny
         fields = '__all__'
@@ -101,7 +102,7 @@ class BookingSerializer(ModelSerializer):
         representation['nanny'] = NannySerializer(nanny, read_only=True).data
         return representation
 class ExtBookingSerializer(ModelSerializer):
-    nanny = NannySerializer(read_only=True)
+    nanny = MiniNannySerializer(read_only=True)
     user = MiniUserSerializer(read_only=True)
     class Meta:
         model = Booking
@@ -113,13 +114,8 @@ class ComplaintsSerializer(ModelSerializer):
         fields = "__all__"
     def to_representation(self, instance):
         representation =  super().to_representation(instance)
-        # reviews
-        bookings = []
-        
-        for booking in instance.booking.all():
-            seria_lizer = ExtBookingSerializer(booking, many=False, read_only=True)
-            bookings.append(seria_lizer.data)
-        representation['booking'] = booking
+    
+        representation['booking'] = ExtBookingSerializer(instance.booking, many=False, read_only=True).data
         return representation
         
 class NotificationSerializer(ModelSerializer):
