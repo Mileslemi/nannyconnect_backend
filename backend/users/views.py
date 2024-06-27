@@ -362,11 +362,13 @@ class NotificationsList(APIView):
                 chat = Chats.objects.filter(Q(party_a=data['sender'],party_b=data['receiver'])|Q(party_a=data['receiver'],party_b=data['sender'])).first()
                 chat.notifications.add(notif['id'])
                 chat.save()
+                serializer = ChatsSerializer(chat)
+                return Response(serializer.data)       
             else:
                 chat_serializer = ChatsSerializer(data = {"party_a":data['sender'],"party_b":data['receiver'],"notifications":[notif['id']]})
                 if chat_serializer.is_valid(raise_exception=True):                    
-                    chat_serializer.save()                      
-            return Response(notif)
+                    chat_serializer.save()
+                    return Response(chat_serializer.data)                      
 
 class NotificationsDetail(APIView):
     serializer_class = NotificationSerializer
