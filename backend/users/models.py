@@ -33,7 +33,7 @@ class UserAccountManager(BaseUserManager):
         
         # hash password using inbuilt django fn
         user.set_password(password)
-        user.save(using=self._db)
+        user.save()
         
         return user
     
@@ -83,10 +83,24 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.username
 
+class Reviews(models.Model):
+    reviewer = models.ForeignKey(User, related_name="reviwer", on_delete=models.RESTRICT)
+    review = models.TextField(null=True)
+    rating = models.FloatField(default=4.7)
+
+class NannyForms(models.Model):
+    id_front = models.FileField(upload_to="documents/")
+    id_back = models.FileField(upload_to="documents/")
+    cert = models.FileField(upload_to="documents/")
 class Nanny(models.Model):
     user = models.OneToOneField(User, on_delete=models.RESTRICT)
     availabity = models.BooleanField(default=False)
     hourly_rate = models.DecimalField(max_digits=10, decimal_places=2)
+    bio = models.TextField(blank=True, null=True)
+    reviews = models.ManyToManyField(Reviews, blank=True)
+    verified = models.BooleanField(default=False)
+    suspended = models.BooleanField(default=False)
+    docs = models.OneToOneField(NannyForms, blank=True, null=True, on_delete=models.PROTECT)
 
 class Booking(models.Model):
     user = models.ForeignKey(User, related_name="user", on_delete=models.RESTRICT)
@@ -94,7 +108,27 @@ class Booking(models.Model):
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     negotiated_hourly_rate = models.DecimalField(max_digits=10, decimal_places=2)
+    # done === paid
     status_choice = {"pending":"Pending", "confirmed":"Confirmed","rejected":"Rejected" ,"cancelled":"Cancelled", "done":"Done"}
     status = models.CharField(max_length=16, choices=status_choice, default="pending")
     details = models.TextField(null=True, blank=True)
+
+
+class Complaints(models.Model):
+    booking = models.ManyToManyField(Booking)
+    complaint = models.TextField()
     
+class Notifications(models.Model):
+    sender = models.ForeignKey(User, related_name='sender', on_delete=models.PROTECT)
+    receiver = models.ForeignKey(User, related_name='receiver', on_delete=models.PROTECT)
+    date_created_gmt = models.DateTimeField(auto_now_add=True)
+    date_modified_gmt = models.DateTimeField(auto_now=True)
+    notification = models.TextField()
+    read = models.BooleanField(default=False)
+
+class Chats(models.Model):
+    party_a = models.ForeignKey(User, related_name='party_a', on_delete=models.PROTECT)
+    party_b = models.ForeignKey(User, related_name='party_b', on_delete=models.PROTECT)
+    date_created_gmt = models.DateTimeField(auto_now_add=True)
+    date_modified_gmt = models.DateTimeField(auto_now=True)
+    notifications = models.ManyToManyField(Notifications)

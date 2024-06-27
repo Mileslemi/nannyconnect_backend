@@ -17,6 +17,29 @@ class AddressSerializer(ModelSerializer):
     class Meta:
         model = Address
         fields = "__all__"
+
+class MiniUserSerializer(ModelSerializer):
+    location = AddressSerializer(read_only=True)
+    class Meta:
+        model = User
+        fields = ('id', 'email','first_name','last_name','phone_number','location', 'image')
+
+class MiniMiniUserSerializer(ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id','first_name','last_name','phone_number','image')
+
+
+class ReviewReadSerializer(ModelSerializer):
+    reviewer = MiniUserSerializer(read_only=True)
+    class Meta:
+        model = Reviews
+        fields = "__all__"
+
+class ReviewSerializer(ModelSerializer):
+    class Meta:
+        model = Reviews
+        fields = "__all__"
         
 class UserSerializer(UserSerializer):
     location = AddressSerializer(read_only=True)
@@ -30,19 +53,35 @@ class UserSerializer(UserSerializer):
                 representation['nanny'] = MiniNannySerializer(Nanny.objects.get(user=representation['id'])).data
         return representation 
     
-class MiniUserSerializer(ModelSerializer):
-    location = AddressSerializer(read_only=True)
+class ReviewReadSerializer(ModelSerializer):
+    reviewer = MiniUserSerializer(read_only=True)
     class Meta:
-        model = User
-        fields = ('id', 'email','first_name','last_name','phone_number','location', 'image')
+        model = Reviews
+        fields = "__all__"
+
+class NannyFormsSerializer(ModelSerializer):
+    class Meta:
+        model = NannyForms
+        fields = "__all__"    
+
 class NannySerializer(ModelSerializer):
     class Meta:
         model = Nanny
         fields = '__all__'
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        user = User.objects.get(id=representation['user'])
-        representation['user'] = MiniUserSerializer(user, read_only=True).data
+        # user = User.objects.get(id=representation['user'])
+        representation['user'] = MiniUserSerializer(instance.user, read_only=True).data
+        # docs
+        if instance.docs != None:
+            representation['docs'] = NannyFormsSerializer(instance.docs, many=False, read_only=True).data
+        # reviews
+        reviews_listing = []
+        
+        for review in instance.reviews.all():
+            seria_lizer = ReviewReadSerializer(review, many=False, read_only=True)
+            reviews_listing.append(seria_lizer.data)
+        representation['reviews'] = reviews_listing
         return representation
 
 class MiniNannySerializer(ModelSerializer):
@@ -67,5 +106,48 @@ class ExtBookingSerializer(ModelSerializer):
     class Meta:
         model = Booking
         fields = "__all__"
-        
 
+class ComplaintsSerializer(ModelSerializer):
+    class Meta:
+        model = Complaints
+        fields = "__all__"
+    def to_representation(self, instance):
+        representation =  super().to_representation(instance)
+        # reviews
+        bookings = []
+        
+        for booking in instance.booking.all():
+            seria_lizer = ExtBookingSerializer(booking, many=False, read_only=True)
+            bookings.append(seria_lizer.data)
+        representation['booking'] = booking
+        return representation
+        
+class NotificationSerializer(ModelSerializer):
+    class Meta:
+        model = Notifications
+        fields = "__all__"
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['sender'] = MiniMiniUserSerializer(instance.sender, many=False, read_only=True).data
+        representation['receiver'] = MiniMiniUserSerializer(instance.receiver, many=False, read_only=True).data
+        
+        return representation
+
+class ChatsSerializer(ModelSerializer):
+    class Meta:
+        model = Chats
+        fields = "__all__"
+    
+    def to_representation(self, instance):
+        representation =  super().to_representation(instance)
+        representation['party_a'] = MiniMiniUserSerializer(instance.party_a, many=False, read_only=True).data
+        representation['party_b'] = MiniMiniUserSerializer(instance.party_b, many=False, read_only=True).data
+        
+        # notifications
+        notifications = []
+        
+        for n in instance.notifications.all():
+            seria_lizer = NotificationSerializer(n, many=False, read_only=True)
+            notifications.append(seria_lizer.data)
+        representation['notifications'] = notifications
+        return representation

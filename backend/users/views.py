@@ -1,6 +1,6 @@
 import datetime
 
-from django.http import Http404
+from django.http import Http404, HttpResponseBadRequest
 
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
@@ -163,7 +163,6 @@ class NannyList(APIView):
         return Response(serializer.data)
         
     def post(self, request):
-        print(request.data)
         serializer = NannySerializer(data=request.data)
         
         if serializer.is_valid(raise_exception=True):
@@ -185,9 +184,9 @@ class NannyDetail(APIView):
         return Response(serializer.data)
     
     def put(self, request, pk):
-        address = self.get_object(pk)
+        nanny = self.get_object(pk)
         
-        serializer = NannySerializer(address, data=request.data)
+        serializer = NannySerializer(nanny, data=request.data)
         if serializer.is_valid():
             serializer.save()          
             return Response(serializer.data)
@@ -234,4 +233,201 @@ def checkBookingSlot(request):
         if Booking.objects.filter(Q(start_time__lt = start_time) | Q (start_time__lt = end_time), Q(end_time__gt = start_time) | Q(end_time__gt = end_time), Q(status='pending') | Q(status='confirmed'), nanny=nanny).exists():
             return Response(False)
     return Response(True)
+
+class ReviewNanny(APIView):
+    def post(self, request):
+        reviewer = request.data.get("reviewer", None)
+        review = request.data.get("review", None)
+        rating = request.data.get("rating", None)
+        nannyId = request.data.get("nanny_id", None)
+        if reviewer and nannyId:
+            serializer = ReviewSerializer(data={"reviewer":reviewer,"review":review,"rating":rating})       
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                saved_review = serializer.data 
+                # link review with nanny
+                nanny = Nanny.objects.get(id=nannyId)
+                nanny.reviews.add(saved_review['id'])
+                nanny.save()       
+                return Response(saved_review)
+
+class ComplaintsList(APIView):
+    serializer_class = ComplaintsSerializer
+    def get(self, request):
+        complaints = Complaints.objects.all()
+        serializer = ComplaintsSerializer(complaints, many=True)
+        return Response(serializer.data)
+        
+    def post(self, request):
+        serializer = ComplaintsSerializer(data=request.data)
+        
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data)
+
+class ComplaintDetail(APIView):
+    serializer_class = ComplaintsSerializer
     
+    def get_object(self, pk):
+        try:
+            return Complaints.objects.get(id=pk)
+        except Complaints.DoesNotExist:
+            raise Http404
+            
+    def get(self, request, pk):
+        complaint = self.get_object(pk)
+        serializer = ComplaintsSerializer(complaint)
+        return Response(serializer.data)
+    
+    def put(self, request, pk):
+        complaint = self.get_object(pk)
+        
+        serializer = ComplaintsSerializer(complaint, data=request.data)
+        if serializer.is_valid():
+            serializer.save()          
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ChatsList(APIView):
+    serializer_class = ChatsSerializer
+    def get(self, request):
+        chants = Chats.objects.all()
+        serializer = ChatsSerializer(chants, many=True)
+        return Response(serializer.data)
+
+class ChatDetail(APIView):
+    serializer_class = ChatsSerializer
+    
+    def get_object(self, pk):
+        try:
+            return Chats.objects.get(id=pk)
+        except Chats.DoesNotExist:
+            raise Http404
+            
+    def get(self, request, pk):
+        chat = self.get_object(pk)
+        serializer = ChatsSerializer(chat)
+        return Response(serializer.data)
+    
+    def put(self, request, pk):
+        chat = self.get_object(pk)
+        
+        serializer = ChatsSerializer(chat, data=request.data)
+        if serializer.is_valid():
+            serializer.save()          
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class NannyFormsUploading(APIView):
+    serializer_class = NannyFormsSerializer
+        
+    def post(self, request):
+        print(request.data)
+        id_front = request.FILES["id_front"]
+        id_back = request.FILES["id_back"]
+        cert = request.FILES["cert"]
+        nanny_id = request.data.get("nanny_id", None)
+        
+        if id_front and id_back and cert and nanny_id:
+            serializer = NannyFormsSerializer(data={"id_front":id_front, "id_back":id_back, "cert":cert})
+            
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                uploaded_form = serializer.data
+                # update nanny docs
+                nanny = Nanny.objects.get(id=nanny_id)
+                nanny.docs = NannyForms.objects.get(id=uploaded_form['id'])
+                nanny.save()                
+                
+                return Response(uploaded_form)
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class NotificationsList(APIView):
+    serializer_class = NotificationSerializer
+    def get(self, request):
+        notifications = Notifications.objects.all()
+        serializer = NotificationSerializer(notifications, many=True)
+        return Response(serializer.data)
+        
+    def post(self, request):
+        data = request.data
+        serializer = NotificationSerializer(data=data)
+        
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            notif = serializer.data
+            # update chat add this notif
+            if Chats.objects.filter(Q(party_a=data['sender'],party_b=data['receiver'])|Q(party_a=data['receiver'],party_b=data['sender'])).exists():
+                # chat exists, update 
+                chat = Chats.objects.filter(Q(party_a=data['sender'],party_b=data['receiver'])|Q(party_a=data['receiver'],party_b=data['sender'])).first()
+                chat.notifications.add(notif['id'])
+                chat.save()
+            else:
+                chat_serializer = ChatsSerializer(data = {"party_a":data['sender'],"party_b":data['receiver'],"notifications":[notif['id']]})
+                if chat_serializer.is_valid(raise_exception=True):                    
+                    chat_serializer.save()                      
+            return Response(notif)
+
+class NotificationsDetail(APIView):
+    serializer_class = NotificationSerializer
+    
+    def get_object(self, pk):
+        try:
+            return Notifications.objects.get(id=pk)
+        except Notifications.DoesNotExist:
+            raise Http404
+            
+    def get(self, request, pk):
+        notif = self.get_object(pk)
+        serializer = NotificationSerializer(notif)
+        return Response(serializer.data)
+    
+    def put(self, request, pk):
+        notif = self.get_object(pk)
+        
+        serializer = NotificationSerializer(notif, data=request.data)
+        if serializer.is_valid():
+            serializer.save()          
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+# notification filtering -> filter by receiver and sender
+class FilterNotifications(APIView):
+    serializer_class = NotificationSerializer
+    def post(self, request):
+        receiver = request.data.get("receiver", None)
+        sender = request.data.get("sender", None)
+        if receiver and sender:
+            notifications = Notifications.objects.filter(Q(sender=sender, receiver=receiver)|Q(sender=receiver, receiver=sender))
+            serializer = NotificationSerializer(notifications, many=True)
+            return Response(serializer.data)
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def getChats(request):
+    user_id = request.data.get("user_id", None)
+    if user_id:
+        chats = Chats.objects.filter(Q(party_a=user_id)|Q(party_b=user_id)).order_by('-date_modified_gmt')
+        serializer = ChatsSerializer(chats, many=True)
+        return Response(serializer.data)
+    return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# get all unread notifications of specific receiver, disticnt sender
+@api_view(['POST'])
+def unReadNotificationsCount(request):
+    receiver = request.data.get("receiver", None)
+    if receiver:
+        count = Notifications.objects.filter(receiver=receiver, read=False).distinct('sender').count()
+        return Response(count)
+    return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# update all notifications with certain sender and receiver, and where I'm receiver, as read
+@api_view(['POST'])
+def updateAsRead(request):
+    receiver = request.data.get("receiver", None)
+    sender = request.data.get("sender", None)
+    if receiver and sender:
+        Notifications.objects.filter(sender=sender, receiver=receiver, read=False).update(read=True)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
